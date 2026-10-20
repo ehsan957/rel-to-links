@@ -19,14 +19,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Rel_For_Links {
 
-	const META_KEY   = '_rfl_menu_item_rel';
-	const OPTION_KEY = 'rfl_settings';
+	const META_KEY   = '_rel_for_links_menu_item_rel';
+	const OPTION_KEY = 'rel_for_links_settings';
 
 	public static function init() {
 		add_action( 'wp_nav_menu_item_custom_fields', array( __CLASS__, 'render_fields' ), 10, 2 );
 		add_action( 'wp_update_nav_menu_item', array( __CLASS__, 'save_fields' ), 10, 2 );
 		add_filter( 'nav_menu_link_attributes', array( __CLASS__, 'apply_rel' ), 10, 2 );
-		add_action( 'admin_head-nav-menus.php', array( __CLASS__, 'admin_styles' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_styles' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_menu', array( __CLASS__, 'add_settings_page' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( __CLASS__, 'action_links' ) );
@@ -79,15 +79,15 @@ final class Rel_For_Links {
 
 	public static function render_fields( $item_id, $item ) {
 		$selected = self::get_item_rel( $item_id );
-		wp_nonce_field( 'rfl_save_' . $item_id, 'rfl_nonce_' . $item_id );
+		wp_nonce_field( 'rel_for_links_save_' . $item_id, 'rel_for_links_nonce_' . $item_id );
 		?>
-		<fieldset class="field-rfl-rel description description-wide">
+		<fieldset class="field-rel-for-links-rel description description-wide">
 			<legend><?php esc_html_e( 'Link rel attributes', 'rel-for-links' ); ?></legend>
 			<?php foreach ( self::options() as $value => $label ) : ?>
-				<label for="rfl-rel-<?php echo esc_attr( $value . '-' . $item_id ); ?>">
+				<label for="rel-for-links-rel-<?php echo esc_attr( $value . '-' . $item_id ); ?>">
 					<input type="checkbox"
-						id="rfl-rel-<?php echo esc_attr( $value . '-' . $item_id ); ?>"
-						name="rfl_rel[<?php echo esc_attr( $item_id ); ?>][]"
+						id="rel-for-links-rel-<?php echo esc_attr( $value . '-' . $item_id ); ?>"
+						name="rel_for_links_rel[<?php echo esc_attr( $item_id ); ?>][]"
 						value="<?php echo esc_attr( $value ); ?>"
 						<?php checked( in_array( $value, $selected, true ) ); ?> />
 					<?php echo esc_html( $label ); ?>
@@ -98,14 +98,14 @@ final class Rel_For_Links {
 	}
 
 	public static function save_fields( $menu_id, $item_id ) {
-		$nonce = isset( $_POST[ 'rfl_nonce_' . $item_id ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'rfl_nonce_' . $item_id ] ) ) : '';
+		$nonce = isset( $_POST[ 'rel_for_links_nonce_' . $item_id ] ) ? sanitize_text_field( wp_unslash( $_POST[ 'rel_for_links_nonce_' . $item_id ] ) ) : '';
 
 		// Only act on full menu-screen saves that rendered our fields.
-		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'rfl_save_' . $item_id ) || ! current_user_can( 'edit_theme_options' ) ) {
+		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'rel_for_links_save_' . $item_id ) || ! current_user_can( 'edit_theme_options' ) ) {
 			return;
 		}
 
-		$submitted = isset( $_POST['rfl_rel'][ $item_id ] ) ? (array) wp_unslash( $_POST['rfl_rel'][ $item_id ] ) : array();
+		$submitted = isset( $_POST['rel_for_links_rel'][ $item_id ] ) ? (array) wp_unslash( $_POST['rel_for_links_rel'][ $item_id ] ) : array();
 		$values    = array_values( array_intersect( array_map( 'sanitize_key', $submitted ), array_keys( self::options() ) ) );
 
 		if ( $values ) {
@@ -170,7 +170,7 @@ final class Rel_For_Links {
 
 	public static function register_settings() {
 		register_setting(
-			'rfl_settings_group',
+			'rel_for_links_settings_group',
 			self::OPTION_KEY,
 			array(
 				'type'              => 'array',
@@ -215,7 +215,7 @@ final class Rel_For_Links {
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 			<form action="options.php" method="post">
-				<?php settings_fields( 'rfl_settings_group' ); ?>
+				<?php settings_fields( 'rel_for_links_settings_group' ); ?>
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><?php esc_html_e( 'External menu links', 'rel-for-links' ); ?></th>
@@ -248,14 +248,19 @@ final class Rel_For_Links {
 		<?php
 	}
 
-	public static function admin_styles() {
-		?>
-		<style>
-			.field-rfl-rel { margin: 6px 0 10px; }
-			.field-rfl-rel legend { margin-bottom: 4px; }
-			.field-rfl-rel label { display: inline-block; margin: 0 12px 4px 0; }
-		</style>
-		<?php
+	public static function admin_styles( $hook_suffix ) {
+		if ( 'nav-menus.php' !== $hook_suffix ) {
+			return;
+		}
+
+		wp_register_style( 'rel-for-links-admin', false, array(), '1.0.0' );
+		wp_enqueue_style( 'rel-for-links-admin' );
+		wp_add_inline_style(
+			'rel-for-links-admin',
+			'.field-rel-for-links-rel { margin: 6px 0 10px; }
+			.field-rel-for-links-rel legend { margin-bottom: 4px; }
+			.field-rel-for-links-rel label { display: inline-block; margin: 0 12px 4px 0; }'
+		);
 	}
 }
 
