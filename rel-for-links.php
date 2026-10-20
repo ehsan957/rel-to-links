@@ -5,7 +5,7 @@
  * Version:           1.0.0
  * Requires at least: 5.4
  * Requires PHP:      7.0
- * Plugin URI:        https://grizzly.ir
+ * Plugin URI:        https://github.com/ehsan957/rel-to-links
  * Author:            Ehsan Shariaty
  * Author URI:        https://grizzly.ir
  * License:           GPL-2.0-or-later
